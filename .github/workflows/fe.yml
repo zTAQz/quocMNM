@@ -1,0 +1,50 @@
+# Đường dẫn: .github/workflows/deploy-frontend.yml
+
+name: 🚀 Deploy Frontend to SomEE
+
+on:
+  push:
+    branches:
+      - main # Chạy khi code được push lên nhánh 'main'
+    paths:
+      - 'frontend/**' # CHỈ chạy khi có thay đổi trong thư mục 'frontend'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    # Định nghĩa biến môi trường cho deployment
+    env:
+      FE_DIST_PATH: frontend/dist # Giả sử thư mục build ra là 'dist' trong 'frontend'
+
+    steps:
+      - name: 📦 Checkout code
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18' # Điều chỉnh phiên bản Node.js nếu cần
+
+      - name: 🧱 Install Dependencies & Build Frontend
+        run: |
+          cd frontend
+          npm install
+          npm run build # Thay thế bằng lệnh build thực tế của dự án bạn (ví dụ: yarn build)
+        
+      - name: 📤 Deploy Frontend via SFTP (Sử dụng Host/User/Pass)
+        # SỬ DỤNG: appleboy/scp-action là một action phổ biến để deploy qua SFTP/SCP.
+        # BẠN CẦN THAY THẾ nếu SomEE có action riêng HOẶC bạn dùng CLI.
+        uses: appleboy/scp-action@v0.1.7 
+        with:
+          host: ${{ secrets.SOMEE_FE_HOST }}
+          username: ${{ secrets.SOMEE_FE_USER }}
+          password: ${{ secrets.SOMEE_FE_PASS }}
+          port: 22 # Thay thế bằng cổng SFTP/FTP mà SomEE cung cấp (thường là 22 hoặc 21)
+          source: ${{ env.FE_DIST_PATH }}/* # Triển khai tất cả file trong thư mục build
+          # THAY THẾ 'target' bằng đường dẫn thư mục công khai (wwwroot) trên server SomEE của bạn
+          target: "/site/wwwroot/frontend-app" 
+          strip_components: 1 # Để chỉ upload nội dung bên trong thư mục 'dist'
+          
+      - name: ✅ Deployment Successful
+        run: echo "Frontend đã được triển khai thành công lên SomEE!"
