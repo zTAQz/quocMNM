@@ -1,0 +1,43 @@
+# Đường dẫn: .github/workflows/deploy-frontend.yml
+
+name: 🚀 Deploy Frontend (HTML Tĩnh) to SomEE
+
+on:
+  push:
+    branches:
+      - main # Chạy khi code được push lên nhánh 'main'
+    paths:
+      - 'frontend/**' # CHỈ chạy khi có thay đổi trong thư mục 'frontend'
+
+jobs:
+  deploy:
+    # SomEE chạy trên Windows/IIS, nhưng GitHub Actions Runner (ubuntu-latest)
+    # được dùng để chạy lệnh triển khai (scp/sftp) lên SomEE.
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📦 Checkout code
+        uses: actions/checkout@v4
+
+      # Bỏ qua: KHÔNG CẦN Setup Node.js Environment
+      # Bỏ qua: KHÔNG CẦN Install Dependencies & Build (Vì là HTML Tĩnh)
+      
+      - name: 📤 Deploy HTML Static via SFTP (Sử dụng Host/User/Pass)
+        # SỬ DỤNG: appleboy/scp-action là action để triển khai qua SFTP/SCP.
+        uses: appleboy/scp-action@v0.1.7 
+        with:
+          host: ${{ secrets.SOMEE_FE_HOST }}
+          username: ${{ secrets.SOMEE_FE_USER }}
+          password: ${{ secrets.SOMEE_FE_PASS }}
+          port: 22 # Kiểm tra lại cổng SFTP/FTP chính xác của SomEE
+          # Lấy TẤT CẢ file/thư mục bên trong thư mục 'frontend'
+          source: frontend/* # QUAN TRỌNG: Target là thư mục web root của bạn trên SomEE
+          # Target được đặt theo tên miền của bạn như trong File Manager
+          target: "/www.quocMNM.somee.com" 
+          
+          # strip_components: 1 đảm bảo chỉ nội dung bên trong 'frontend'  được upload, 
+          # không tạo thêm thư mục 'frontend' trên server.
+          strip_components: 1 
+          
+      - name: ✅ Deployment Successful
+        run: echo "Frontend HTML Tĩnh đã được triển khai thành công lên SomEE!"
